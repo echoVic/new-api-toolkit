@@ -135,6 +135,24 @@
     .tip strong {
       color: #333;
     }
+    .feedback-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    .feedback-link:hover {
+      background: #dcfce7;
+    }
     .footer {
       margin-top: 14px;
       padding-top: 10px;
@@ -167,6 +185,15 @@
     <div class="module-list" id="module-list">
       <!-- populated by popup.js -->
     </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">反馈 & 需求</div>
+    <a href="https://my.feishu.cn/share/base/form/shrcnRaY2RaMUC5EPv1z9YmcW0c" target="_blank" class="feedback-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>提交需求 / 反馈建议</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:0.4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
   </div>
 
   <div class="tip" id="tip-area">
