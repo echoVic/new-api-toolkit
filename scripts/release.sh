@@ -4,15 +4,16 @@ set -euo pipefail
 # ─── 配置 ───
 REPO="echoVic/new-api-toolkit"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-PEM_FILE="${SCRIPT_DIR}/new-api-toolkit.pem"
+PEM_FILE="${PROJECT_DIR}/new-api-toolkit.pem"
 
 # ─── 从 manifest.json 读取版本号 ───
-VERSION=$(grep '"version"' "${SCRIPT_DIR}/manifest.json" | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
+VERSION=$(grep '"version"' "${PROJECT_DIR}/manifest.json" | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
 TAG="v${VERSION}"
 ZIP_NAME="new-api-toolkit-${TAG}.zip"
 CRX_NAME="new-api-toolkit-${TAG}.crx"
-DIST_DIR="${SCRIPT_DIR}/dist"
+DIST_DIR="${PROJECT_DIR}/dist"
 
 echo "==> 构建 New API Toolkit ${TAG}"
 
@@ -25,7 +26,8 @@ echo "==> 打包 ZIP..."
 TEMP_DIR=$(mktemp -d)
 # 复制源文件（排除不需要的内容）
 rsync -a --exclude='.git' --exclude='dist' --exclude='*.pem' --exclude='scripts' --exclude='README.md' \
-  "${SCRIPT_DIR}/" "${TEMP_DIR}/new-api-toolkit/"
+  --exclude='CONTRIBUTING.md' --exclude='.github' --exclude='docs' \
+  "${PROJECT_DIR}/" "${TEMP_DIR}/new-api-toolkit/"
 (cd "${TEMP_DIR}" && zip -r "${DIST_DIR}/${ZIP_NAME}" new-api-toolkit/)
 rm -rf "${TEMP_DIR}"
 echo "    ✓ ${ZIP_NAME}"
@@ -36,12 +38,12 @@ if [ ! -f "${CHROME}" ]; then
   echo "    ⚠ Chrome 未找到，跳过 CRX 打包"
   CRX_BUILT=false
 else
-  CRX_ARGS="--pack-extension=${SCRIPT_DIR} --no-message-box"
+  CRX_ARGS="--pack-extension=${PROJECT_DIR} --no-message-box"
   if [ -f "${PEM_FILE}" ]; then
     CRX_ARGS="${CRX_ARGS} --pack-extension-key=${PEM_FILE}"
   fi
-  # Chrome 会在 SCRIPT_DIR 的父目录生成 .crx
-  PARENT_DIR="$(dirname "${SCRIPT_DIR}")"
+  # Chrome 会在 PROJECT_DIR 的父目录生成 .crx
+  PARENT_DIR="$(dirname "${PROJECT_DIR}")"
   "${CHROME}" ${CRX_ARGS} 2>/dev/null || true
   CRX_OUTPUT="${PARENT_DIR}/new-api-toolkit.crx"
   if [ -f "${CRX_OUTPUT}" ]; then
