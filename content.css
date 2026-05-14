@@ -1,0 +1,324 @@
+/* =========================================================================
+   New API Toolkit - Global Styles
+   ========================================================================= */
+
+/* Progress toast (shared across all modules) */
+.napi-export-progress {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: hsl(var(--background, 0 0% 100%));
+  border: 1px solid hsl(var(--border, 220 13% 91%));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  font-family: inherit;
+  color: hsl(var(--foreground, 222.2 84% 4.9%));
+  animation: napi-slide-in 0.25s ease-out;
+}
+
+.napi-export-progress.napi-done {
+  background: hsl(142, 76%, 36%);
+  color: #fff;
+  border-color: hsl(142, 76%, 36%);
+}
+
+.napi-export-progress.napi-error {
+  background: hsl(0, 84%, 60%);
+  color: #fff;
+  border-color: hsl(0, 84%, 60%);
+}
+
+@keyframes napi-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Spinner */
+.napi-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid hsl(var(--border, 220 13% 91%));
+  border-top-color: hsl(var(--primary, 222.2 47.4% 11.2%));
+  border-radius: 50%;
+  animation: napi-spin 0.6s linear infinite;
+}
+
+@keyframes napi-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =========================================================================
+   Module: Log Export
+   ========================================================================= */
+
+.napi-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  height: 28px;
+  border: 1px solid hsl(var(--border, 220 13% 91%));
+  border-radius: 6px;
+  background: hsl(var(--background, 0 0% 100%));
+  color: hsl(var(--foreground, 222.2 84% 4.9%));
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.napi-export-btn:hover {
+  background: hsl(var(--accent, 210 40% 96.1%));
+  border-color: hsl(var(--accent, 210 40% 96.1%));
+}
+
+.napi-export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.napi-export-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   Module: API Client
+   ========================================================================= */
+
+/* FAB */
+.napi-ac-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99990;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.napi-ac-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+.napi-ac-fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Panel */
+.napi-ac-panel {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  z-index: 99991;
+  width: 480px;
+  max-height: 80vh;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  overflow: hidden;
+}
+
+/* Header */
+.napi-ac-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  user-select: none;
+}
+.napi-ac-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.napi-ac-title svg { color: #2563eb; }
+.napi-ac-header-actions {
+  display: flex;
+  gap: 2px;
+}
+.napi-ac-btn-icon {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: background 0.15s, color 0.15s;
+}
+.napi-ac-btn-icon:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Body */
+.napi-ac-body {
+  padding: 12px 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* URL row */
+.napi-ac-url-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.napi-ac-method {
+  width: 90px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+  padding: 0 8px;
+  cursor: pointer;
+  appearance: auto;
+  color: #16a34a;
+}
+.napi-ac-url {
+  flex: 1;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.napi-ac-url:focus {
+  border-color: #2563eb;
+}
+.napi-ac-send {
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.napi-ac-send:hover {
+  background: #1d4ed8;
+}
+.napi-ac-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sections */
+.napi-ac-section {
+  margin-bottom: 10px;
+}
+.napi-ac-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.napi-ac-hint {
+  font-weight: 400;
+  color: #94a3b8;
+  font-size: 10px;
+}
+.napi-ac-textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+  background: #f8fafc;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  min-height: 32px;
+}
+.napi-ac-textarea:focus {
+  border-color: #2563eb;
+  background: #fff;
+}
+
+/* Response */
+.napi-ac-status {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+}
+.napi-ac-status-ok { color: #16a34a; }
+.napi-ac-status-warn { color: #d97706; }
+.napi-ac-status-err { color: #dc2626; }
+
+.napi-ac-response-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+}
+.napi-ac-response {
+  width: 100%;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+  background: #f8fafc;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+  line-height: 1.5;
+  color: #334155;
+}
+.napi-ac-resp-error {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}

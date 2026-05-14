@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New API Toolkit</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fff;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .header svg {
+      width: 28px;
+      height: 28px;
+      color: #2563eb;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .header p {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .section {
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .module-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .module-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      transition: background 0.15s;
+    }
+    .module-item.active {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+    .module-item.inactive {
+      opacity: 0.55;
+      border: 1px solid transparent;
+    }
+    .module-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #4338ca;
+      flex-shrink: 0;
+    }
+    .module-item.inactive .module-icon {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+    .module-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .module-name {
+      font-weight: 500;
+      font-size: 13px;
+    }
+    .module-desc {
+      font-size: 11px;
+      color: #666;
+      margin-top: 1px;
+    }
+    .module-status {
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .module-status.on { color: #16a34a; }
+    .module-status.off { color: #9ca3af; }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .info-row + .info-row {
+      border-top: 1px solid #f0f0f0;
+    }
+    .info-label {
+      color: #666;
+    }
+    .info-value {
+      font-weight: 500;
+      font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+      font-size: 12px;
+    }
+    .tip {
+      margin-top: 14px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.5;
+    }
+    .tip strong {
+      color: #333;
+    }
+    .footer {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e5e5;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <div>
+      <h1>New API Toolkit</h1>
+      <p>New API 增强工具集</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">当前页面</div>
+    <div class="info-row">
+      <span class="info-label">路径</span>
+      <span class="info-value" id="page-path" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">-</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">功能模块</div>
+    <div class="module-list" id="module-list">
+      <!-- populated by popup.js -->
+    </div>
+  </div>
+
+  <div class="tip" id="tip-area">
+    <strong>说明：</strong><br>
+    模块会根据当前页面自动激活。打开对应的 New API 页面即可使用相关功能。
+  </div>
+
+  <div class="footer">
+    v0.1.0 · New API Toolkit
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
