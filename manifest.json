@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "New API Toolkit",
-  "version": "0.1.0",
-  "description": "Toolkit for New API dashboards — log export, and more",
-  "permissions": ["activeTab"],
+  "version": "0.2.0",
+  "description": "Toolkit for New API dashboards — log export, channel monitoring, and more",
+  "permissions": ["activeTab", "notifications", "storage", "alarms"],
   "host_permissions": ["*://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

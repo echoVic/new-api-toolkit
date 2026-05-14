@@ -30,6 +30,31 @@
 
   window.addEventListener('message', async (event) => {
     if (event.source !== window) return
+
+    // 凭据采集请求
+    if (event.data?.type === 'NAPI_CREDS_REQUEST') {
+      const userId = getUserId()
+      const token = getAccessToken()
+      // 从 localStorage 读取用户角色
+      let role = 0
+      try {
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          const user = JSON.parse(userStr)
+          role = user?.role ?? 0
+        }
+      } catch {}
+      window.postMessage({
+        type: 'NAPI_CREDS_RESPONSE',
+        callbackId: event.data.callbackId,
+        origin: window.location.origin,
+        token: token || '',
+        userId: userId || '',
+        role,
+      }, '*')
+      return
+    }
+
     if (event.data?.type !== 'NAPI_FETCH_REQUEST') return
 
     const { callbackId, url, options } = event.data

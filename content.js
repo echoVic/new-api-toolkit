@@ -129,6 +129,57 @@
   }
 
   // =========================================================================
+  // 自动采集凭据（供 background 渠道监控使用）
+  // =========================================================================
+
+  function autoCaptureCreds() {
+    // 通过 page-bridge 从页面 localStorage 获取凭据
+    const callbackId = 'napi_creds_' + Date.now()
+
+    const handler = (event) => {
+      if (event.data?.type === 'NAPI_CREDS_RESPONSE' && event.data?.callbackId === callbackId) {
+        window.removeEventListener('message', handler)
+        const { origin, token, userId, role } = event.data
+        if (origin && userId) {
+          // 存入 chrome.storage 供 background 和 popup 使用
+          chrome.storage?.local?.get('monitor_config', (data) => {
+            const config = data?.monitor_config || {}
+            let changed = false
+
+            if (!config.apiBase && origin) {
+              config.apiBase = origin
+              changed = true
+            }
+            if (!config.token && token) {
+              config.token = token
+              changed = true
+            }
+            if (!config.userId && userId) {
+              config.userId = userId
+              changed = true
+            }
+            // 始终更新 role（用户可能切换账号）
+            if (role !== undefined && config.role !== role) {
+              config.role = role
+              changed = true
+            }
+
+            if (changed) {
+              chrome.storage.local.set({ monitor_config: config })
+              console.log('[NAPI Toolkit] Auto-captured credentials for monitor:', origin, 'role:', role)
+            }
+          })
+        }
+      }
+    }
+    window.addEventListener('message', handler)
+    window.postMessage({ type: 'NAPI_CREDS_REQUEST', callbackId }, '*')
+
+    // 超时清理
+    setTimeout(() => window.removeEventListener('message', handler), 3000)
+  }
+
+  // =========================================================================
   // 模块生命周期管理
   // =========================================================================
 
@@ -185,6 +236,7 @@
   function init() {
     console.log(`[NAPI Toolkit] Initializing (${window.__NAPI_MODULES.length} modules registered)`)
     activateModules()
+    autoCaptureCreds()
   }
 
   if (document.readyState === 'loading') {
