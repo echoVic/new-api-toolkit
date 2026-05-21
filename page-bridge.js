@@ -8,6 +8,59 @@
 ;(function () {
   'use strict'
 
+  // =========================================================================
+  // 主动监听 localStorage 变化，登录完成时立即推送凭据
+  // =========================================================================
+
+  /**
+   * 拦截 localStorage.setItem，当 token 或 user 被写入时主动推送凭据
+   * 这解决了：用户跳转到站点登录后，凭据不能及时同步回扩展的问题
+   */
+  const originalSetItem = Storage.prototype.setItem
+  Storage.prototype.setItem = function (key, value) {
+    originalSetItem.call(this, key, value)
+    if (this === localStorage && (key === 'token' || key === 'user')) {
+      // 延迟一点以确保 token 和 user 都已写入
+      setTimeout(pushCredsToExtension, 300)
+    }
+  }
+
+  /**
+   * 监听 storage 事件（来自其他标签页的 localStorage 变化）
+   */
+  window.addEventListener('storage', (event) => {
+    if (event.storageArea === localStorage && (event.key === 'token' || event.key === 'user')) {
+      setTimeout(pushCredsToExtension, 300)
+    }
+  })
+
+  /** 主动将当前凭据推送给 content script */
+  function pushCredsToExtension() {
+    const token = getAccessToken()
+    const userId = getUserId()
+    let role = 0
+    try {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        role = user?.role ?? 0
+      }
+    } catch {}
+
+    // 只在有有效凭据时推送
+    if (token || userId) {
+      window.postMessage({
+        type: 'NAPI_CREDS_PUSH',
+        origin: window.location.origin,
+        token: token || '',
+        userId: userId || '',
+        role,
+      }, '*')
+    }
+  }
+
+  // =========================================================================
+
   /** 从 localStorage 中获取 user ID（与前端 axios 实例保持一致） */
   function getUserId() {
     try {
@@ -20,10 +73,14 @@
     return ''
   }
 
-  /** 从 localStorage 中获取 access token */
+  /** 从 localStorage 中获取 access token（兼容多种存储 key） */
   function getAccessToken() {
     try {
-      return localStorage.getItem('token') || ''
+      // 尝试常见的 token 存储 key
+      return localStorage.getItem('token')
+        || localStorage.getItem('access_token')
+        || localStorage.getItem('session_token')
+        || ''
     } catch {}
     return ''
   }

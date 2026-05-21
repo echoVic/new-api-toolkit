@@ -141,11 +141,22 @@
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="tools">工具</button>
-    <button class="tab-btn" data-tab="monitor" id="tab-btn-monitor" style="display:none;">监控</button>
+    <button class="tab-btn" data-tab="monitor" id="tab-btn-monitor" style="display:none;">报错监控</button>
+    <button class="tab-btn" data-tab="balance" id="tab-btn-balance" style="display:none;">余额监控</button>
   </div>
 
   <!-- Tab: 工具 -->
   <div class="tab-panel active" id="panel-tools">
+    <div class="section">
+      <div class="section-title">主站点</div>
+      <div id="main-site-info" style="font-size:12px;color:#666;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input id="main-site-url" type="url" placeholder="https://your-new-api.com" style="flex:1;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;outline:none;">
+          <button id="main-site-save" style="padding:4px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;">设置</button>
+        </div>
+        <div id="main-site-status" style="margin-top:4px;font-size:11px;color:#9ca3af;"></div>
+      </div>
+    </div>
     <div class="section">
       <div class="section-title">当前页面</div>
       <div class="info-row">
@@ -202,6 +213,27 @@
         </div>
       </div>
       <div id="monitor-status" style="margin-top:8px;font-size:11px;color:#666;"></div>
+    </div>
+  </div>
+
+  <!-- Tab: 余额监控 -->
+  <div class="tab-panel" id="panel-balance">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="section-title" style="margin-bottom:0;">多站点余额监控</div>
+      <button id="bal-refresh-all" style="padding:3px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#666;font-size:11px;cursor:pointer;">全部刷新</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <label style="font-size:12px;color:#666;white-space:nowrap;">低余额阈值 $</label>
+      <input id="bal-threshold" type="number" min="0" step="1" value="10" style="width:60px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+    </div>
+    <!-- 添加站点 -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <input id="bal-new-site" type="url" placeholder="https://api.example.com" style="flex:1;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;outline:none;">
+      <button id="bal-add-site" style="padding:4px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;">添加</button>
+    </div>
+    <!-- 站点列表 -->
+    <div id="bal-sites-list" style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#666;">
+      <span>暂无站点，请添加 New API 站点地址</span>
     </div>
   </div>
 

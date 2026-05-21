@@ -132,6 +132,65 @@
   // 自动采集凭据（供 background 渠道监控使用）
   // =========================================================================
 
+  // 监听 page-bridge 主动推送的凭据（登录完成时立即触发）
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || event.data?.type !== 'NAPI_CREDS_PUSH') return
+    const { origin, token, userId, role } = event.data
+    if (origin && (token || userId)) {
+      saveCreds(origin, token, userId, role)
+    }
+  })
+
+  /** 保存凭据到 chrome.storage（monitor_config + balance_sites） */
+  function saveCreds(origin, token, userId, role) {
+    // 1. 更新 monitor_config（仅限主站点）
+    chrome.storage?.local?.get('monitor_config', (data) => {
+      const config = data?.monitor_config || {}
+      const isMainSite = !config.apiBase || config.apiBase === origin
+
+      if (!isMainSite) return
+
+      let changed = false
+      if (!config.apiBase && origin) { config.apiBase = origin; changed = true }
+      if (token && config.token !== token) { config.token = token; changed = true }
+      if (userId && config.userId !== userId) { config.userId = userId; changed = true }
+      if (role !== undefined && config.role !== role) { config.role = role; changed = true }
+      // 标记认证方式：有 token 为 token 认证，否则为 cookie 认证
+      const authMode = token ? 'token' : 'cookie'
+      if (config.authMode !== authMode) { config.authMode = authMode; changed = true }
+
+      if (changed) {
+        chrome.storage.local.set({ monitor_config: config })
+        console.log('[NAPI Toolkit] Credentials updated for monitor:', origin, 'role:', role, 'auth:', authMode)
+      }
+    })
+
+    // 2. 更新 balance_sites
+    chrome.storage?.local?.get('balance_sites', (data) => {
+      const sites = data?.balance_sites || []
+      const idx = sites.findIndex((s) => {
+        // 兼容：存储的 url 可能带路径，用 origin 匹配
+        try { return new URL(s.url).origin === origin } catch { return s.url === origin }
+      })
+      if (idx >= 0) {
+        const site = sites[idx]
+        let changed = false
+        // 修正 url 为 origin（去掉多余路径）
+        if (site.url !== origin) { site.url = origin; changed = true }
+        if (token && site.token !== token) { site.token = token; changed = true }
+        if (userId && site.userId !== userId) { site.userId = userId; changed = true }
+        if (role !== undefined && site.role !== role) { site.role = role; changed = true }
+        // 标记认证方式
+        const authMode = token ? 'token' : 'cookie'
+        if (site.authMode !== authMode) { site.authMode = authMode; changed = true }
+        if (changed) {
+          chrome.storage.local.set({ balance_sites: sites })
+          console.log('[NAPI Toolkit] Updated balance site credentials:', origin, 'auth:', authMode)
+        }
+      }
+    })
+  }
+
   function autoCaptureCreds() {
     // 通过 page-bridge 从页面 localStorage 获取凭据
     const callbackId = 'napi_creds_' + Date.now()
@@ -140,35 +199,8 @@
       if (event.data?.type === 'NAPI_CREDS_RESPONSE' && event.data?.callbackId === callbackId) {
         window.removeEventListener('message', handler)
         const { origin, token, userId, role } = event.data
-        if (origin && userId) {
-          // 存入 chrome.storage 供 background 和 popup 使用
-          chrome.storage?.local?.get('monitor_config', (data) => {
-            const config = data?.monitor_config || {}
-            let changed = false
-
-            if (!config.apiBase && origin) {
-              config.apiBase = origin
-              changed = true
-            }
-            if (!config.token && token) {
-              config.token = token
-              changed = true
-            }
-            if (!config.userId && userId) {
-              config.userId = userId
-              changed = true
-            }
-            // 始终更新 role（用户可能切换账号）
-            if (role !== undefined && config.role !== role) {
-              config.role = role
-              changed = true
-            }
-
-            if (changed) {
-              chrome.storage.local.set({ monitor_config: config })
-              console.log('[NAPI Toolkit] Auto-captured credentials for monitor:', origin, 'role:', role)
-            }
-          })
+        if (origin && (token || userId)) {
+          saveCreds(origin, token, userId, role)
         }
       }
     }
@@ -224,6 +256,8 @@
       lastPath = currentPath
       // 延迟以等待 SPA 渲染完成
       setTimeout(activateModules, 1000)
+      // 路由变化时重新采集凭据（用户可能刚登录完跳转了）
+      setTimeout(autoCaptureCreds, 2000)
     }
   })
 
@@ -237,6 +271,8 @@
     console.log(`[NAPI Toolkit] Initializing (${window.__NAPI_MODULES.length} modules registered)`)
     activateModules()
     autoCaptureCreds()
+    // 延迟重试一次（登录后 SPA 可能需要几秒才写入 localStorage）
+    setTimeout(autoCaptureCreds, 5000)
   }
 
   if (document.readyState === 'loading') {

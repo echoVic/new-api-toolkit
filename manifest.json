@@ -3,7 +3,7 @@
   "name": "New API Toolkit",
   "version": "0.2.0",
   "description": "Toolkit for New API dashboards — log export, channel monitoring, and more",
-  "permissions": ["activeTab", "notifications", "storage", "alarms"],
+  "permissions": ["activeTab", "tabs", "scripting", "notifications", "storage", "alarms"],
   "host_permissions": ["*://*/*"],
   "background": {
     "service_worker": "background.js"
@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["lib/xlsx.full.min.js", "content.js", "modules/log-export.js", "modules/api-client.js"],
+      "js": ["lib/xlsx.full.min.js", "content.js", "modules/log-export.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
