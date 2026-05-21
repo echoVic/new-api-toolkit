@@ -45,17 +45,24 @@
             target: { tabId: match.id },
             world: 'MAIN',
             func: () => {
+              // 兼容 New API 和 Sub2API
               const token = localStorage.getItem('token')
+                || localStorage.getItem('auth_token')
                 || localStorage.getItem('access_token')
                 || localStorage.getItem('session_token')
                 || ''
-              let userId = '', role = 0
+              let userId = '', role = 0, platform = ''
               try {
-                const u = JSON.parse(localStorage.getItem('user') || '{}')
-                userId = u?.id ? String(u.id) : ''
-                role = u?.role ?? 0
+                const u = JSON.parse(localStorage.getItem('user') || 'null')
+                if (u?.id) { userId = String(u.id); role = u.role ?? 0; platform = 'new-api' }
               } catch {}
-              return { token, userId, role }
+              if (!userId) {
+                try {
+                  const u = JSON.parse(localStorage.getItem('auth_user') || 'null')
+                  if (u?.id) { userId = String(u.id); role = u.role === 'admin' ? 10 : 1; platform = 'sub2api' }
+                } catch {}
+              }
+              return { token, userId, role, platform }
             },
           })
           const creds = results?.[0]?.result
@@ -460,8 +467,10 @@
     const { balance_sites: sites } = await chrome.storage.local.get('balance_sites')
     const list = sites || []
 
-    // 检查重复
-    if (list.some((s) => s.url === url)) {
+    // 检查重复（用 origin 比较，兼容旧数据可能带路径）
+    if (list.some((s) => {
+      try { return new URL(s.url).origin === url } catch { return s.url === url }
+    })) {
       $balNewSite.value = ''
       $balNewSite.placeholder = '该站点已存在'
       setTimeout(() => { $balNewSite.placeholder = 'https://api.example.com' }, 2000)
@@ -475,13 +484,16 @@
     // 打开新标签页让用户去登录
     chrome.tabs.create({ url: url + '/', active: true })
 
-    renderSitesList(list)
+    await renderSitesList(list)
   })
 
   // 渲染站点列表
-  function renderSitesList(sites, results) {
+  const $balSummary = document.getElementById('bal-summary')
+
+  async function renderSitesList(sites, results) {
     if (!sites?.length) {
       $balSitesList.innerHTML = '<span>暂无站点，请添加 New API 站点地址</span>'
+      $balSummary.style.display = 'none'
       return
     }
 
@@ -491,6 +503,57 @@
       for (const r of results) {
         resultMap[r.url] = r
       }
+    }
+
+    // 获取主站 URL 用于计算差额
+    const { monitor_config: mConfig } = await chrome.storage.local.get('monitor_config')
+    let mainSiteOrigin = null
+    if (mConfig?.apiBase) {
+      try { mainSiteOrigin = new URL(mConfig.apiBase).origin } catch {}
+    }
+
+    // 计算差额：主站今日消费 - 其他站点今日消费之和
+    let mainTodayUsed = null
+    let otherTodayUsedSum = 0
+    let hasOtherToday = false
+
+    for (const site of sites) {
+      let siteOrigin
+      try { siteOrigin = new URL(site.url).origin } catch { siteOrigin = site.url }
+      const result = resultMap[site.url]
+      if (!result?.channels?.length) continue
+      const ch = result.channels[0]
+      if (ch.todayUsed == null) continue
+
+      if (mainSiteOrigin && siteOrigin === mainSiteOrigin) {
+        mainTodayUsed = ch.todayUsed
+      } else {
+        otherTodayUsedSum += ch.todayUsed
+        hasOtherToday = true
+      }
+    }
+
+    // 如果主站不在列表中，独立查询主站今日消费
+    if (mainSiteOrigin && mainTodayUsed == null && results) {
+      try {
+        const mainResult = await chrome.runtime.sendMessage({
+          type: 'NAPI_FETCH_MAIN_TODAY',
+          apiBase: mainSiteOrigin,
+        })
+        if (mainResult?.todayUsed != null) {
+          mainTodayUsed = mainResult.todayUsed
+        }
+      } catch {}
+    }
+
+    // 显示差额
+    if (mainSiteOrigin && mainTodayUsed != null && hasOtherToday) {
+      const diff = mainTodayUsed - otherTodayUsedSum
+      const diffColor = diff >= 0 ? '#dc2626' : '#16a34a'
+      $balSummary.innerHTML = `📊 主站今日消费 <strong>$${mainTodayUsed.toFixed(2)}</strong> − 其他站点 <strong>$${otherTodayUsedSum.toFixed(2)}</strong> = <strong style="color:${diffColor};">$${diff.toFixed(2)}</strong>`
+      $balSummary.style.display = 'block'
+    } else {
+      $balSummary.style.display = 'none'
     }
 
     $balSitesList.innerHTML = ''
@@ -538,8 +601,8 @@
             const color = low ? '#ef4444' : '#16a34a'
             const icon = low ? '🔴' : '🟢'
             let line = `${icon} 余额: <strong style="color:${color}">$${bal.toFixed(2)}</strong>`
-            if (ch.usedQuota != null) {
-              line += ` <span style="color:#6b7280;">(已用 $${ch.usedQuota.toFixed(2)})</span>`
+            if (ch.todayUsed != null) {
+              line += ` <span style="color:#6b7280;">| 今日消费 $${ch.todayUsed.toFixed(2)}</span>`
             }
             card.innerHTML += `<div style="margin-top:4px;font-size:11px;">${line}</div>`
           }
@@ -585,7 +648,7 @@
         if (s) {
           s.splice(idx, 1)
           await chrome.storage.local.set({ balance_sites: s })
-          renderSitesList(s)
+          await renderSitesList(s)
         }
       })
     })
@@ -610,7 +673,7 @@
       }
       // 重新加载最新 sites（可能有凭据更新）
       const { balance_sites: updatedSites } = await chrome.storage.local.get('balance_sites')
-      renderSitesList(updatedSites || sites, result.results)
+      await renderSitesList(updatedSites || sites, result.results)
     } catch (err) {
       $balSitesList.innerHTML = `<span style="color:#ef4444;">错误: ${esc(err.message)}</span>`
     } finally {
@@ -642,17 +705,24 @@
             target: { tabId: match.id },
             world: 'MAIN',
             func: () => {
+              // 兼容 New API 和 Sub2API
               const token = localStorage.getItem('token')
+                || localStorage.getItem('auth_token')
                 || localStorage.getItem('access_token')
                 || localStorage.getItem('session_token')
                 || ''
-              let userId = '', role = 0
+              let userId = '', role = 0, platform = ''
               try {
-                const u = JSON.parse(localStorage.getItem('user') || '{}')
-                userId = u?.id ? String(u.id) : ''
-                role = u?.role ?? 0
+                const u = JSON.parse(localStorage.getItem('user') || 'null')
+                if (u?.id) { userId = String(u.id); role = u.role ?? 0; platform = 'new-api' }
               } catch {}
-              return { token, userId, role }
+              if (!userId) {
+                try {
+                  const u = JSON.parse(localStorage.getItem('auth_user') || 'null')
+                  if (u?.id) { userId = String(u.id); role = u.role === 'admin' ? 10 : 1; platform = 'sub2api' }
+                } catch {}
+              }
+              return { token, userId, role, platform }
             },
           })
           const creds = results?.[0]?.result
@@ -660,10 +730,12 @@
           if (creds && (creds.token || creds.userId)) {
             const tokenChanged = creds.token && creds.token !== site.token
             const userChanged = creds.userId && creds.userId !== site.userId
-            if (tokenChanged || userChanged || site.url !== siteOrigin) {
+            const platformChanged = creds.platform && creds.platform !== site.platform
+            if (tokenChanged || userChanged || platformChanged || site.url !== siteOrigin) {
               if (creds.token) site.token = creds.token
               site.userId = creds.userId
               site.role = creds.role
+              if (creds.platform) site.platform = creds.platform
               site.authMode = creds.token ? 'token' : 'cookie'
               // 修正 url 为 origin
               site.url = siteOrigin
@@ -680,7 +752,7 @@
       await chrome.storage.local.set({ balance_sites: sites })
     }
 
-    renderSitesList(sites, data?.results)
+    await renderSitesList(sites, data?.results)
   }
 
   // =========================================================================

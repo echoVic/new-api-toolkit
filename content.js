@@ -135,14 +135,14 @@
   // 监听 page-bridge 主动推送的凭据（登录完成时立即触发）
   window.addEventListener('message', (event) => {
     if (event.source !== window || event.data?.type !== 'NAPI_CREDS_PUSH') return
-    const { origin, token, userId, role } = event.data
+    const { origin, token, userId, role, platform } = event.data
     if (origin && (token || userId)) {
-      saveCreds(origin, token, userId, role)
+      saveCreds(origin, token, userId, role, platform)
     }
   })
 
   /** 保存凭据到 chrome.storage（monitor_config + balance_sites） */
-  function saveCreds(origin, token, userId, role) {
+  function saveCreds(origin, token, userId, role, platform) {
     // 1. 更新 monitor_config（仅限主站点）
     chrome.storage?.local?.get('monitor_config', (data) => {
       const config = data?.monitor_config || {}
@@ -155,13 +155,14 @@
       if (token && config.token !== token) { config.token = token; changed = true }
       if (userId && config.userId !== userId) { config.userId = userId; changed = true }
       if (role !== undefined && config.role !== role) { config.role = role; changed = true }
+      if (platform && config.platform !== platform) { config.platform = platform; changed = true }
       // 标记认证方式：有 token 为 token 认证，否则为 cookie 认证
       const authMode = token ? 'token' : 'cookie'
       if (config.authMode !== authMode) { config.authMode = authMode; changed = true }
 
       if (changed) {
         chrome.storage.local.set({ monitor_config: config })
-        console.log('[NAPI Toolkit] Credentials updated for monitor:', origin, 'role:', role, 'auth:', authMode)
+        console.log('[NAPI Toolkit] Credentials updated for monitor:', origin, 'platform:', platform, 'auth:', authMode)
       }
     })
 
@@ -180,12 +181,13 @@
         if (token && site.token !== token) { site.token = token; changed = true }
         if (userId && site.userId !== userId) { site.userId = userId; changed = true }
         if (role !== undefined && site.role !== role) { site.role = role; changed = true }
+        if (platform && site.platform !== platform) { site.platform = platform; changed = true }
         // 标记认证方式
         const authMode = token ? 'token' : 'cookie'
         if (site.authMode !== authMode) { site.authMode = authMode; changed = true }
         if (changed) {
           chrome.storage.local.set({ balance_sites: sites })
-          console.log('[NAPI Toolkit] Updated balance site credentials:', origin, 'auth:', authMode)
+          console.log('[NAPI Toolkit] Updated balance site credentials:', origin, 'platform:', platform, 'auth:', authMode)
         }
       }
     })

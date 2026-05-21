@@ -78,6 +78,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     checkSiteLogin(msg.site).then(sendResponse)
     return true
   }
+  if (msg.type === 'NAPI_FETCH_MAIN_TODAY') {
+    fetchMainSiteTodayUsed(msg.apiBase).then(sendResponse)
+    return true
+  }
 })
 
 // =========================================================================
@@ -441,6 +445,54 @@ async function clearBadge() {
 }
 
 // =========================================================================
+// 主站今日消费独立查询
+// =========================================================================
+
+async function fetchMainSiteTodayUsed(apiBase) {
+  try {
+    const { monitor_config: config } = await chrome.storage.local.get('monitor_config')
+    if (!config) return { todayUsed: null }
+
+    const base = apiBase.replace(/\/$/, '')
+    const headers = { Accept: 'application/json', 'Cache-Control': 'no-store' }
+    if (config.token) headers['Authorization'] = config.token
+    if (config.userId) headers['New-Api-User'] = config.userId
+
+    // 管理员：用渠道级别统计
+    if (config.role >= 10) {
+      const now = new Date()
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+      const endOfDay = Math.floor(Date.now() / 1000)
+      const statUrl = `${base}/api/log/stat?type=2&start_timestamp=${startOfDay}&end_timestamp=${endOfDay}`
+      const resp = await fetch(statUrl, { method: 'GET', headers, credentials: 'include' })
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data?.success && typeof data.data?.quota === 'number') {
+          return { todayUsed: data.data.quota / 500000 }
+        }
+      }
+    }
+
+    // 普通用户：用 /api/log/self/stat
+    const now = new Date()
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+    const endOfDay = Math.floor(Date.now() / 1000)
+    const statUrl = `${base}/api/log/self/stat?type=2&start_timestamp=${startOfDay}&end_timestamp=${endOfDay}`
+    const resp = await fetch(statUrl, { method: 'GET', headers, credentials: 'include' })
+    if (resp.ok) {
+      const data = await resp.json()
+      if (data?.success && typeof data.data?.quota === 'number') {
+        return { todayUsed: data.data.quota / 500000 }
+      }
+    }
+
+    return { todayUsed: null }
+  } catch {
+    return { todayUsed: null }
+  }
+}
+
+// =========================================================================
 // 多站点余额检查
 // =========================================================================
 
@@ -473,21 +525,96 @@ async function checkSiteLogin(site) {
 
 /**
  * 对单个站点查询余额
- * 管理员（role >= 10）：查询各渠道余额
- * 普通用户：从 /api/user/self 获取个人余额
+ * 根据 platform 字段选择对应的 API：
+ * - sub2api: /api/v1/auth/me
+ * - new-api (管理员 role >= 10): /api/channel/ 渠道余额
+ * - new-api (普通用户): /api/user/self
  */
 async function fetchSiteBalances(site) {
   const base = site.url.replace(/\/$/, '')
+  let platform = site.platform || ''
+  const role = site.role ?? 0
   const headers = {
     Accept: 'application/json',
     'Cache-Control': 'no-store',
   }
-  if (site.token) headers['Authorization'] = site.token
+  if (site.token) {
+    // Sub2API 需要 Bearer 前缀，New API 直接用 token
+    headers['Authorization'] = platform === 'sub2api'
+      ? `Bearer ${site.token}`
+      : site.token
+  }
   if (site.userId) headers['New-Api-User'] = site.userId
 
-  const role = site.role ?? 0
+  // 如果平台未知，尝试自动检测
+  if (!platform) {
+    try {
+      const probeResp = await fetch(`${base}/api/v1/auth/me`, {
+        method: 'GET', headers, credentials: 'include'
+      })
+      if (probeResp.ok) {
+        const probeData = await probeResp.json()
+        if (probeData?.code === 0 && probeData?.data?.balance !== undefined) {
+          platform = 'sub2api'
+          // 持久化 platform 到存储
+          const stored = await chrome.storage.local.get('balance_sites')
+          const sites = stored?.balance_sites || []
+          const idx = sites.findIndex(s => s.url === site.url)
+          if (idx >= 0) { sites[idx].platform = 'sub2api'; chrome.storage.local.set({ balance_sites: sites }) }
+        }
+      }
+    } catch {}
+    if (!platform) platform = 'new-api'
+  }
 
-  // 普通用户：从 /api/user/self 获取余额
+  // Sub2API 站点
+  if (platform === 'sub2api') {
+    const meUrl = `${base}/api/v1/auth/me`
+    const meResp = await fetch(meUrl, { method: 'GET', headers, credentials: 'include' })
+
+    if (meResp.status === 401 || meResp.status === 403) {
+      return { url: site.url, loggedIn: false, channels: [] }
+    }
+
+    if (!meResp.ok) {
+      throw new Error(`HTTP ${meResp.status}`)
+    }
+
+    const meData = await meResp.json()
+    if (meData?.code !== 0 || !meData?.data) {
+      return { url: site.url, loggedIn: false, channels: [] }
+    }
+
+    const user = meData.data
+
+    // 查询今日消费
+    let todayUsed = null
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai'
+      const statsUrl = `${base}/api/v1/usage/dashboard/stats?timezone=${encodeURIComponent(tz)}`
+      const statsResp = await fetch(statsUrl, { method: 'GET', headers, credentials: 'include' })
+      if (statsResp.ok) {
+        const statsData = await statsResp.json()
+        if (statsData?.code === 0 && typeof statsData?.data?.today_actual_cost === 'number') {
+          todayUsed = statsData.data.today_actual_cost
+        }
+      }
+    } catch {}
+
+    return {
+      url: site.url,
+      loggedIn: true,
+      userMode: true,
+      channels: [{
+        id: user.id,
+        name: user.display_name || user.username || `用户 #${user.id}`,
+        balance: typeof user.balance === 'number' ? user.balance : null,
+        todayUsed,
+      }],
+    }
+  }
+
+  // New API 普通用户：从 /api/user/self 获取余额 + 今日消费
   if (role < 10) {
     const selfUrl = `${base}/api/user/self`
     const selfResp = await fetch(selfUrl, { method: 'GET', headers, credentials: 'include' })
@@ -510,6 +637,22 @@ async function fetchSiteBalances(site) {
     const quota = typeof user.quota === 'number' ? user.quota / 500000 : null
     const usedQuota = typeof user.used_quota === 'number' ? user.used_quota / 500000 : null
 
+    // 查询今日消费
+    let todayUsed = null
+    try {
+      const now = new Date()
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+      const endOfDay = Math.floor(Date.now() / 1000)
+      const statUrl = `${base}/api/log/self/stat?type=2&start_timestamp=${startOfDay}&end_timestamp=${endOfDay}`
+      const statResp = await fetch(statUrl, { method: 'GET', headers, credentials: 'include' })
+      if (statResp.ok) {
+        const statData = await statResp.json()
+        if (statData?.success && typeof statData.data?.quota === 'number') {
+          todayUsed = statData.data.quota / 500000
+        }
+      }
+    } catch {}
+
     return {
       url: site.url,
       loggedIn: true,
@@ -519,11 +662,12 @@ async function fetchSiteBalances(site) {
         name: user.display_name || user.username || `用户 #${user.id}`,
         balance: quota,
         usedQuota,
+        todayUsed,
       }],
     }
   }
 
-  // 管理员：查询各渠道余额
+  // New API 管理员：查询各渠道余额
   const listUrl = `${base}/api/channel/?p=1&page_size=200`
   const listResp = await fetch(listUrl, { method: 'GET', headers, credentials: 'include' })
 
