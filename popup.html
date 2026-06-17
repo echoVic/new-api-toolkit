@@ -78,6 +78,14 @@
       letter-spacing: 0.05em;
       margin-bottom: 8px;
     }
+    /* Card style for tool sections */
+    #panel-tools .section {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
 
     /* Module list */
     .module-list { display: flex; flex-direction: column; gap: 6px; }
@@ -209,6 +217,32 @@
     <div class="section">
       <div class="section-title">功能模块</div>
       <div class="module-list" id="module-list"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">倍率换算</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="metric-tip" style="width:72px;"><label style="color:#666;white-space:nowrap;">汇率 ¥:$1</label><span class="tip-icon">?</span><span class="tip-text">当前 USD/CNY 市场汇率</span></span>
+          <input id="rate-exchange" type="number" min="0" step="0.01" value="6.76" style="width:70px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+          <button id="rate-sync" title="同步实时汇率" style="padding:2px 8px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#666;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .15s;" onmouseover="this.style.borderColor='#2563eb';this.style.color='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#666'">同步</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="metric-tip" style="width:72px;"><label style="color:#666;white-space:nowrap;">站点倍率</label><span class="tip-icon">?</span><span class="tip-text">站点对该模型设定的倍率</span></span>
+          <input id="rate-site" type="number" min="0" step="0.1" value="1" style="width:70px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="metric-tip" style="width:72px;"><label style="color:#666;white-space:nowrap;">折扣</label><span class="tip-icon">?</span><span class="tip-text">X 折 = 支付原价的 X/10</span></span>
+          <div style="display:flex;align-items:center;gap:4px;flex:1;">
+            <input id="rate-discount" type="number" min="0" max="10" step="0.1" value="5" style="width:50px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+            <span style="color:#666;">折</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid #e5e7eb;padding-top:8px;display:flex;flex-direction:column;gap:4px;" id="rate-result">
+          <div style="display:flex;justify-content:space-between;"><span class="metric-tip"><span style="color:#666;">支付倍率</span><span class="tip-icon">?</span><span class="tip-text">站点倍率 × (折扣/10)，实际扣费系数</span></span><span id="rate-pay" style="font-weight:600;">-</span></div>
+          <div style="display:flex;justify-content:space-between;"><span class="metric-tip"><span style="color:#666;">¥1 可换</span><span class="tip-icon">?</span><span class="tip-text">1 元人民币能换多少美元额度</span></span><span id="rate-usd" style="font-weight:600;">-</span></div>
+          <div style="display:flex;justify-content:space-between;"><span class="metric-tip"><span style="color:#666;">实付 ¥/$1</span><span class="tip-icon">?</span><span class="tip-text">每消耗 $1 额度实际花费的人民币</span></span><span id="rate-normalized" style="font-weight:600;">-</span></div>
+        </div>
+      </div>
     </div>
   </div>
 

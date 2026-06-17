@@ -910,6 +910,64 @@
   // =========================================================================
   // 初始化
   // =========================================================================
+  // 倍率换算
+  // =========================================================================
+  const $rateExchange = document.getElementById('rate-exchange')
+  const $rateSite = document.getElementById('rate-site')
+  const $rateDiscount = document.getElementById('rate-discount')
+  const $ratePay = document.getElementById('rate-pay')
+  const $rateUsd = document.getElementById('rate-usd')
+  const $rateNormalized = document.getElementById('rate-normalized')
+
+  function calcRate() {
+    const exchange = parseFloat($rateExchange.value) || 0
+    const siteRate = parseFloat($rateSite.value) || 0
+    const discount = parseFloat($rateDiscount.value) || 0
+    if (!exchange || !siteRate || !discount) {
+      $ratePay.textContent = '-'
+      $rateUsd.textContent = '-'
+      $rateNormalized.textContent = '-'
+      return
+    }
+    const payRate = siteRate * (discount / 10)
+    const usdPerCny = 1 / (exchange * payRate)
+    const normalized = exchange * payRate
+    $ratePay.textContent = `x${payRate.toFixed(4)}`
+    $rateUsd.textContent = `$${usdPerCny.toFixed(4)}`
+    $rateNormalized.textContent = `¥${normalized.toFixed(4)}`
+  }
+
+  $rateExchange.addEventListener('input', calcRate)
+  $rateSite.addEventListener('input', calcRate)
+  $rateDiscount.addEventListener('input', calcRate)
+  calcRate()
+
+  document.getElementById('rate-sync').addEventListener('click', async function () {
+    const btn = this
+    btn.disabled = true
+    btn.textContent = '...'
+    try {
+      const resp = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY')
+      const data = await resp.json()
+      const rate = data.rates?.CNY
+      if (rate) {
+        $rateExchange.value = rate.toFixed(4)
+        calcRate()
+      } else {
+        btn.textContent = '失败'
+        setTimeout(() => { btn.textContent = '同步' }, 1500)
+        return
+      }
+    } catch {
+      btn.textContent = '失败'
+      setTimeout(() => { btn.textContent = '同步' }, 1500)
+      return
+    }
+    btn.textContent = '同步'
+    btn.disabled = false
+  })
+
+  // =========================================================================
 
   updateStatus()
   loadMainSite()
