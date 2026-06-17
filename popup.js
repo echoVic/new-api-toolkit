@@ -6,9 +6,25 @@
 
   // 打开 popup 时清除 Badge（用户已看到告警）
   chrome.action.setBadgeText({ text: '' }).catch(() => {})
-  chrome.action.setTitle({ title: 'New API Toolkit' }).catch(() => {})
+  chrome.action.setTitle({ title: '站长工具' }).catch(() => {})
 
   const ROLE_ADMIN = 10
+
+  // 全屏模式：检测是否在独立标签页中打开
+  const isFullscreen = !window.matchMedia('(max-width: 500px)').matches || window.location.search.includes('fullscreen=1')
+  if (isFullscreen && window.innerWidth > 500) {
+    document.body.style.width = '100%'
+    document.body.style.maxWidth = '720px'
+    document.body.style.margin = '0 auto'
+    document.body.style.padding = '16px 0'
+    const btn = document.getElementById('btn-fullscreen')
+    if (btn) btn.style.display = 'none'
+  }
+
+  document.getElementById('btn-fullscreen')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html?fullscreen=1') })
+    window.close()
+  })
 
   // 已注册模块的元信息（与 modules/ 中的注册保持一致）
   const MODULES = [
@@ -210,9 +226,11 @@
     if (role >= ROLE_ADMIN) {
       $tabBtnMonitor.style.display = ''
       $tabBtnBalance.style.display = ''
+      if ($tabBtnBench) $tabBtnBench.style.display = ''
     } else {
       $tabBtnMonitor.style.display = 'none'
       $tabBtnBalance.style.display = 'none'
+      if ($tabBtnBench) $tabBtnBench.style.display = 'none'
       return
     }
 
@@ -756,6 +774,140 @@
   }
 
   // =========================================================================
+  // 压测 (Benchmark)
+  // =========================================================================
+
+  const $tabBtnBench = document.getElementById('tab-btn-bench')
+  const $benchStart = document.getElementById('bench-start')
+  const $benchAbort = document.getElementById('bench-abort')
+  const $benchProgress = document.getElementById('bench-progress')
+  const $benchProgressText = document.getElementById('bench-progress-text')
+  const $benchProgressTime = document.getElementById('bench-progress-time')
+  const $benchProgressBar = document.getElementById('bench-progress-bar')
+  const $benchResults = document.getElementById('bench-results')
+  const $benchResultsContent = document.getElementById('bench-results-content')
+
+  let benchPort = null
+
+  $benchStart.addEventListener('click', () => {
+    const customPrompt = document.getElementById('bench-prompt').value.trim()
+    const maxTokens = parseInt(document.getElementById('bench-max-tokens').value, 10) || 50
+    const config = {
+      baseURL: document.getElementById('bench-url').value.trim(),
+      apiKey: document.getElementById('bench-key').value.trim(),
+      model: document.getElementById('bench-model').value.trim(),
+      concurrency: parseInt(document.getElementById('bench-concurrency').value, 10) || 5,
+      totalRequests: parseInt(document.getElementById('bench-total').value, 10) || 20,
+      apiFormat: document.getElementById('bench-format').value,
+      stream: document.getElementById('bench-stream').checked,
+      prompt: customPrompt || undefined,
+      maxTokens,
+    }
+
+    if (!config.baseURL || !config.apiKey || !config.model) {
+      $benchResultsContent.innerHTML = '<span style="color:#ef4444;">请填写 Base URL、API Key 和模型</span>'
+      $benchResults.style.display = 'block'
+      return
+    }
+
+    benchPort = chrome.runtime.connect({ name: 'bench' })
+    benchPort.onMessage.addListener(handleBenchMessage)
+    benchPort.onDisconnect.addListener(() => { benchPort = null })
+    benchPort.postMessage({ type: 'NAPI_BENCH_START', config })
+
+    $benchStart.disabled = true
+    $benchStart.textContent = '运行中...'
+    $benchAbort.disabled = false
+    $benchProgress.style.display = 'block'
+    $benchResults.style.display = 'none'
+    $benchProgressBar.style.width = '0%'
+    $benchProgressText.textContent = '0 / ' + config.totalRequests
+    $benchProgressTime.textContent = '0s'
+  })
+
+  $benchAbort.addEventListener('click', () => {
+    if (benchPort) benchPort.postMessage({ type: 'NAPI_BENCH_ABORT' })
+  })
+
+  function handleBenchMessage(msg) {
+    if (msg.type === 'NAPI_BENCH_PROGRESS') {
+      const d = msg.data
+      const pct = ((d.completed / d.total) * 100).toFixed(0)
+      $benchProgressBar.style.width = pct + '%'
+      $benchProgressText.textContent = `${d.completed} / ${d.total} (成功 ${d.succeeded}, 失败 ${d.failed})`
+      $benchProgressTime.textContent = (d.elapsedMs / 1000).toFixed(1) + 's'
+    } else if (msg.type === 'NAPI_BENCH_RESULT') {
+      renderBenchResults(msg.data)
+      resetBenchUI()
+    } else if (msg.type === 'NAPI_BENCH_ERROR') {
+      $benchResultsContent.innerHTML = `<span style="color:#ef4444;">${escHtml(msg.error)}</span>`
+      $benchResults.style.display = 'block'
+      resetBenchUI()
+    }
+  }
+
+  function resetBenchUI() {
+    $benchStart.disabled = false
+    $benchStart.textContent = '开始压测'
+    $benchAbort.disabled = true
+    if (benchPort) { benchPort.disconnect(); benchPort = null }
+  }
+
+  function mt(label, tip) {
+    return `<span class="metric-tip"><span class="info-label">${label}</span><span class="tip-icon">?</span><span class="tip-text">${tip}</span></span>`
+  }
+
+  function renderBenchResults(data) {
+    $benchProgress.style.display = 'none'
+    $benchResults.style.display = 'block'
+    const streamMetrics = data.avgTtftMs !== undefined ? `
+        <div class="info-row">${mt('TTFT 均值', 'Time To First Token，首个 token 返回耗时')}<span class="info-value">${data.avgTtftMs}ms</span></div>
+        <div class="info-row">${mt('TTFT P90', '90% 请求的首 token 延迟不超过此值')}<span class="info-value">${data.p90TtftMs}ms</span></div>
+        <div class="info-row">${mt('TPS 均值', 'Tokens Per Second，平均每秒生成 token 数')}<span class="info-value">${data.avgTps} tok/s</span></div>
+        <div class="info-row">${mt('TPS P50', '50% 请求的生成速度不低于此值')}<span class="info-value">${data.p50Tps} tok/s</span></div>
+    ` : ''
+    $benchResultsContent.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;">
+        <div class="info-row">${mt('总请求', '本次压测发送的总请求数')}<span class="info-value">${data.total}</span></div>
+        <div class="info-row">${mt('成功率', '成功请求数 / 总请求数 × 100%')}<span class="info-value">${data.successRate}%</span></div>
+        <div class="info-row">${mt('成功', '返回 2xx 且解析正常的请求数')}<span class="info-value" style="color:#16a34a;">${data.success}</span></div>
+        <div class="info-row">${mt('失败', 'HTTP 错误或超时的请求数')}<span class="info-value" style="color:${data.errors > 0 ? '#ef4444' : '#666'};">${data.errors}</span></div>
+        <div class="info-row">${mt('平均延迟', '所有成功请求的平均响应时间')}<span class="info-value">${data.avgLatencyMs}ms</span></div>
+        <div class="info-row">${mt('P50', '50% 请求在此延迟内完成')}<span class="info-value">${data.p50Ms}ms</span></div>
+        <div class="info-row">${mt('P90', '90% 请求在此延迟内完成')}<span class="info-value">${data.p90Ms}ms</span></div>
+        <div class="info-row">${mt('P99', '99% 请求在此延迟内完成')}<span class="info-value">${data.p99Ms}ms</span></div>
+        ${streamMetrics}
+        <div class="info-row">${mt('RPM', 'Requests Per Minute，每分钟请求数')}<span class="info-value">${data.rpm}</span></div>
+        <div class="info-row">${mt('TPM', 'Tokens Per Minute，每分钟生成 token 数')}<span class="info-value">${data.tpm}</span></div>
+        <div class="info-row">${mt('总 Token', '所有成功请求的输出 token 总和')}<span class="info-value">${data.totalTokens}</span></div>
+        <div class="info-row">${mt('总耗时', '从首个请求发出到最后一个完成的总时间')}<span class="info-value">${(data.totalDurationMs / 1000).toFixed(1)}s</span></div>
+      </div>
+      ${data.errorDetails?.length ? '<div style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:6px;"><div class="section-title">错误明细</div>' + data.errorDetails.map((e) => `<div style="color:#ef4444;margin-bottom:2px;">${escHtml(e.message)} <b>x${e.count}</b></div>`).join('') + '</div>' : ''}
+    `
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  async function loadBenchStatus() {
+    try {
+      const status = await chrome.runtime.sendMessage({ type: 'NAPI_BENCH_STATUS' })
+      if (status?.running) {
+        $benchStart.disabled = true
+        $benchStart.textContent = '运行中...'
+        $benchAbort.disabled = false
+        $benchProgress.style.display = 'block'
+        benchPort = chrome.runtime.connect({ name: 'bench' })
+        benchPort.onMessage.addListener(handleBenchMessage)
+        benchPort.onDisconnect.addListener(() => { benchPort = null })
+      } else if (status?.lastResult) {
+        renderBenchResults(status.lastResult)
+      }
+    } catch {}
+  }
+
+  // =========================================================================
   // 初始化
   // =========================================================================
 
@@ -765,4 +917,6 @@
   loadBalanceConfig()
   loadLastResult()
   loadLastSitesBalance()
+  loadBenchStatus()
 })()
+

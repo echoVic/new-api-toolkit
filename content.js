@@ -1,5 +1,5 @@
 /**
- * New API Toolkit - Content Script (Module Loader)
+ * 站长工具 - Content Script (Module Loader)
  *
  * 模块化架构：
  * - 此文件为模块加载器，负责检测当前页面并激活匹配的功能模块

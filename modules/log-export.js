@@ -1,5 +1,5 @@
 /**
- * New API Toolkit - Module: Log Export
+ * 站长工具 - Module: Log Export
  *
  * 将使用日志导出为 Excel 文件。
  * 支持 default 前端 (/usage-logs/*) 和 classic 前端 (/console/log)。

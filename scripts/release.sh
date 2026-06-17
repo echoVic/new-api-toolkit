@@ -15,7 +15,7 @@ ZIP_NAME="new-api-toolkit-${TAG}.zip"
 CRX_NAME="new-api-toolkit-${TAG}.crx"
 DIST_DIR="${PROJECT_DIR}/dist"
 
-echo "==> 构建 New API Toolkit ${TAG}"
+echo "==> 构建站长工具 ${TAG}"
 
 # ─── 清理 ───
 rm -rf "${DIST_DIR}"
@@ -81,7 +81,7 @@ if [ "${CRX_BUILT}" = true ]; then
   ASSETS+=("${DIST_DIR}/${CRX_NAME}")
 fi
 
-NOTES="## New API Toolkit ${TAG}
+NOTES="## 站长工具 ${TAG}
 
 ### 安装方式
 1. 下载 \`${ZIP_NAME}\` 并解压
@@ -92,7 +92,7 @@ NOTES="## New API Toolkit ${TAG}
 
 gh release create "${TAG}" \
   --repo "${REPO}" \
-  --title "${TAG} — New API Toolkit" \
+  --title "${TAG} — 站长工具" \
   --notes "${NOTES}" \
   "${ASSETS[@]}"
 

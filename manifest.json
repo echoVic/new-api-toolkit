@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "New API Toolkit",
+  "name": "站长工具",
   "version": "0.3.0",
-  "description": "Toolkit for New API dashboards — log export, channel monitoring, and more",
+  "description": "New API 站长工具 — 日志导出、渠道监控、余额监控、压测",
   "permissions": ["activeTab", "tabs", "scripting", "notifications", "storage", "alarms"],
   "host_permissions": ["*://*/*"],
   "background": {

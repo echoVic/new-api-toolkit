@@ -1,5 +1,5 @@
 /**
- * New API Toolkit - Module: API Client
+ * 站长工具 - Module: API Client
  *
  * 在任意 New API 页面提供一个浮动 API 请求面板。
  * 自动注入 Cookie (credentials: include) 和 Token (localStorage)。

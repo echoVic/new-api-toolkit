@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New API Toolkit</title>
+  <title>站长工具</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -129,13 +129,54 @@
     }
     .feedback-link:hover { color: #2563eb; }
     .footer-version { font-size: 10px; color: #9ca3af; }
+
+    /* Metric tooltip */
+    .metric-tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .metric-tip .tip-icon {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      color: #9ca3af;
+      font-size: 9px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
+      flex-shrink: 0;
+    }
+    .metric-tip:hover .tip-icon { background: #bfdbfe; color: #2563eb; }
+    .metric-tip .tip-text {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 4px);
+      background: #1f2937;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 400;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .metric-tip:hover .tip-text { display: block; }
   </style>
 </head>
 <body>
   <!-- Header -->
   <div class="header">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    <h1>New API Toolkit</h1>
+    <h1>站长工具</h1>
+    <button id="btn-fullscreen" title="在新标签页中打开" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;border-radius:4px;display:flex;align-items:center;transition:color 0.15s;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#9ca3af'">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    </button>
   </div>
 
   <!-- Tabs -->
@@ -143,6 +184,7 @@
     <button class="tab-btn active" data-tab="tools">工具</button>
     <button class="tab-btn" data-tab="monitor" id="tab-btn-monitor" style="display:none;">报错监控</button>
     <button class="tab-btn" data-tab="balance" id="tab-btn-balance" style="display:none;">余额监控</button>
+    <button class="tab-btn" data-tab="bench" id="tab-btn-bench" style="display:none;">压测</button>
   </div>
 
   <!-- Tab: 工具 -->
@@ -236,6 +278,77 @@
     <!-- 站点列表 -->
     <div id="bal-sites-list" style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#666;">
       <span>暂无站点，请添加 New API 站点地址</span>
+    </div>
+  </div>
+
+  <!-- Tab: 压测 -->
+  <div class="tab-panel" id="panel-bench">
+    <div class="section" id="bench-config">
+      <div class="section-title">压测配置</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">API 格式</label>
+          <select id="bench-format" style="flex:1;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+            <option value="openai">OpenAI 兼容</option>
+            <option value="anthropic">Anthropic 兼容</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">Base URL</label>
+          <input id="bench-url" type="url" placeholder="https://api.example.com" style="flex:1;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">API Key</label>
+          <input id="bench-key" type="password" placeholder="sk-..." style="flex:1;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">模型</label>
+          <input id="bench-model" type="text" placeholder="gpt-5.5" style="flex:1;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">并发数</label>
+          <input id="bench-concurrency" type="number" min="1" max="100" value="5" style="width:60px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;">总请求</label>
+          <input id="bench-total" type="number" min="1" max="1000" value="20" style="width:60px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;width:64px;">流式</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#666;">
+            <input id="bench-stream" type="checkbox" checked style="margin:0;">
+            <span>启用（测量 TTFT / TPS）</span>
+          </label>
+        </div>
+        <details style="font-size:12px;">
+          <summary style="cursor:pointer;color:#666;user-select:none;">高级设置</summary>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="font-size:12px;color:#666;white-space:nowrap;width:72px;">max_tokens</label>
+              <input id="bench-max-tokens" type="number" min="1" max="4096" value="50" style="width:70px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <label style="font-size:12px;color:#666;">自定义 Prompt（留空使用默认）</label>
+              <textarea id="bench-prompt" rows="2" placeholder="Say hi in one word." style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;font-family:ui-monospace,monospace;resize:vertical;outline:none;"></textarea>
+            </div>
+          </div>
+        </details>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button id="bench-start" style="flex:1;padding:6px;border:none;border-radius:6px;background:#2563eb;color:#fff;font-size:12px;font-weight:500;cursor:pointer;">开始压测</button>
+          <button id="bench-abort" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#666;font-size:12px;cursor:pointer;" disabled>终止</button>
+        </div>
+      </div>
+    </div>
+    <div id="bench-progress" style="display:none;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#666;margin-bottom:4px;">
+        <span id="bench-progress-text">0 / 0</span>
+        <span id="bench-progress-time">0s</span>
+      </div>
+      <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;">
+        <div id="bench-progress-bar" style="height:100%;background:#2563eb;width:0%;transition:width 0.3s;"></div>
+      </div>
+    </div>
+    <div id="bench-results" style="display:none;">
+      <div class="section-title">压测报告</div>
+      <div id="bench-results-content" style="font-size:11px;"></div>
     </div>
   </div>
 
