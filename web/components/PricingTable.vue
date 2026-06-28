@@ -18,11 +18,13 @@ function setSort(key: SortKey) {
 
 const rows = computed(() => {
   const list = [...MODEL_PRESETS]
-  list.sort((a, b) => {
-    const av = a[sortKey.value] ?? 0
-    const bv = b[sortKey.value] ?? 0
-    return sortAsc.value ? av - bv : bv - av
-  })
+  const sortVal = (m: (typeof MODEL_PRESETS)[number]) => {
+    if (sortKey.value === 'outputPricePer1M' && unit.value === 'ratio') {
+      return completionRatioFromPrices(m.inputPricePer1M, m.outputPricePer1M)
+    }
+    return m[sortKey.value] ?? 0
+  }
+  list.sort((a, b) => (sortAsc.value ? sortVal(a) - sortVal(b) : sortVal(b) - sortVal(a)))
   return list
 })
 
