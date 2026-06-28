@@ -7,10 +7,11 @@ export interface ModelPreset {
 }
 
 export const MODEL_PRESETS: ModelPreset[] = [
-  { name: 'gpt-4o', inputPricePer1M: 2.5, outputPricePer1M: 10 },
-  { name: 'gpt-4o-mini', inputPricePer1M: 0.15, outputPricePer1M: 0.6 },
-  { name: 'claude-3-5-sonnet', inputPricePer1M: 3, outputPricePer1M: 15 },
-  { name: 'claude-3-opus', inputPricePer1M: 15, outputPricePer1M: 75 },
-  { name: 'gemini-1.5-pro', inputPricePer1M: 1.25, outputPricePer1M: 5 },
-  { name: 'deepseek-chat', inputPricePer1M: 0.27, outputPricePer1M: 1.1 },
+  { name: 'claude-opus-4-8', inputPricePer1M: 5, outputPricePer1M: 25 },
+  { name: 'claude-sonnet-4-6', inputPricePer1M: 3, outputPricePer1M: 15 },
+  { name: 'claude-haiku-4-5', inputPricePer1M: 1, outputPricePer1M: 5 },
+  { name: 'gpt-5.5', inputPricePer1M: 5, outputPricePer1M: 30 },
+  { name: 'gpt-5.4', inputPricePer1M: 2.5, outputPricePer1M: 15 },
+  { name: 'gemini-3-pro', inputPricePer1M: 2, outputPricePer1M: 12 },
+  { name: 'deepseek-v3', inputPricePer1M: 0.27, outputPricePer1M: 1.1 },
 ]
