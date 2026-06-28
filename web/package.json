@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev",
+    "dev": "node scripts/fetch-prices.mjs && nuxt dev",
     "build": "nuxt build",
-    "generate": "nuxt generate",
+    "generate": "node scripts/fetch-prices.mjs && nuxt generate",
     "preview": "nuxt preview",
     "test": "vitest run"
   },
