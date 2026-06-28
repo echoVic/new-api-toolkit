@@ -14,7 +14,7 @@ const PROVIDER_WHITELIST = [
   'zhipuai', 'moonshotai', 'minimax', 'mistral',
 ]
 const TOKEN_FACTORS = {
-  deepseek: 1.1, zhipuai: 1.1, moonshotai: 1.1, minimax: 1.1, alibaba: 1.1,
+  deepseek: 1.1, zhipuai: 1.1, moonshotai: 1.1, minimax: 1.1,
 }
 
 // 与 lib/mapModelsDev.ts 同逻辑（脚本是 .mjs，不能 import .ts，故内联一份）。
@@ -31,6 +31,10 @@ function mapModelsDevToPresets(apiJson, opts) {
     for (const model of Object.values(models)) {
       const cost = model?.cost
       if (!cost || typeof cost.input !== 'number') continue
+      const id = model.id
+      if (typeof id !== 'string') continue
+      if (/-20\d{6}$/.test(id)) continue            // dated snapshot duplicate of an alias
+      if (/^(claude-[23]|gpt-3)/.test(id)) continue // legacy generations
       const preset = {
         name: model.id,
         inputPricePer1M: cost.input,

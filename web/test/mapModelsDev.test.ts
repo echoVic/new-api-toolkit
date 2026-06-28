@@ -12,6 +12,20 @@ const SAMPLE = {
         limit: { context: 200000, output: 64000 },
         cost: { input: 5, output: 25, cache_read: 0.5, cache_write: 6.25 },
       },
+      'claude-opus-4-5-20251101': {
+        id: 'claude-opus-4-5-20251101',
+        name: 'Claude Opus 4.5 (dated)',
+        release_date: '2025-11-01',
+        limit: { context: 200000, output: 64000 },
+        cost: { input: 5, output: 25, cache_read: 0.5, cache_write: 6.25 },
+      },
+      'claude-3-opus': {
+        id: 'claude-3-opus',
+        name: 'Claude 3 Opus',
+        release_date: '2024-02-29',
+        limit: { context: 200000, output: 4096 },
+        cost: { input: 15, output: 75 },
+      },
       'no-price-model': {
         id: 'no-price-model',
         name: 'No Price',
@@ -52,6 +66,17 @@ describe('mapModelsDevToPresets', () => {
   it('过滤无 cost.input 的模型', () => {
     const out = mapModelsDevToPresets(SAMPLE, OPTS)
     expect(out.find((m) => m.name === 'no-price-model')).toBeUndefined()
+  })
+
+  it('过滤日期快照（保留干净别名）', () => {
+    const out = mapModelsDevToPresets(SAMPLE, OPTS)
+    expect(out.find((m) => m.name === 'claude-opus-4-5-20251101')).toBeUndefined()
+    expect(out.find((m) => m.name === 'claude-opus-4-5')).toBeDefined()
+  })
+
+  it('过滤旧代模型（claude-3 等）', () => {
+    const out = mapModelsDevToPresets(SAMPLE, OPTS)
+    expect(out.find((m) => m.name === 'claude-3-opus')).toBeUndefined()
   })
 
   it('字段映射正确', () => {

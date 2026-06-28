@@ -21,6 +21,11 @@ export function mapModelsDevToPresets(apiJson: unknown, opts: MapOpts): ModelPre
       const cost = model?.cost
       if (!cost || typeof cost.input !== 'number') continue
 
+      const id = model.id
+      if (typeof id !== 'string') continue
+      if (/-20\d{6}$/.test(id)) continue            // dated snapshot duplicate of an alias
+      if (/^(claude-[23]|gpt-3)/.test(id)) continue // legacy generations
+
       const preset: ModelPreset = {
         name: model.id,
         inputPricePer1M: cost.input,
