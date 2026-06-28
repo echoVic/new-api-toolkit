@@ -17,6 +17,10 @@ async function syncRate() {
   syncError.value = ''
   try {
     const resp = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY')
+    if (!resp.ok) {
+      syncError.value = '同步失败'
+      return
+    }
     const data = await resp.json()
     const rate = data?.rates?.CNY
     if (rate) exchange.value = Number(rate.toFixed(4))

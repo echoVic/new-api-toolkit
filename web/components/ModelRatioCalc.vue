@@ -37,6 +37,11 @@ function applyPreset(name: string) {
   modelRatio.value = inputPriceToModelRatio(p.inputPricePer1M)
   completionRatio.value = completionRatioFromPrices(p.inputPricePer1M, p.outputPricePer1M)
 }
+
+// 输入框清空时 v-model.number 会产生 NaN，展示前兜底为 '—'
+function fmt(n: number, digits: number): string {
+  return Number.isFinite(n) ? n.toFixed(digits) : '—'
+}
 </script>
 
 <template>
@@ -55,7 +60,7 @@ function applyPreset(name: string) {
       <label>模型倍率 <input v-model.number="modelRatio" type="number" step="0.01" min="0"></label>
       <label>输入价 ($/1M) <input v-model.number="inputPrice" type="number" step="0.01" min="0"></label>
       <label>补全倍率 <input v-model.number="completionRatio" type="number" step="0.1" min="0"></label>
-      <label>输出价 ($/1M) <output>{{ outputPrice.toFixed(4) }}</output></label>
+      <label>输出价 ($/1M) <output>{{ fmt(outputPrice, 4) }}</output></label>
       <label>分组倍率 <input v-model.number="groupRatio" type="number" step="0.1" min="0"></label>
     </div>
 
@@ -63,7 +68,7 @@ function applyPreset(name: string) {
     <div class="grid">
       <label>输入 tokens <input v-model.number="inputTokens" type="number" min="0"></label>
       <label>输出 tokens <input v-model.number="outputTokens" type="number" min="0"></label>
-      <label>预计花费 ($) <output>{{ costUsd.toFixed(6) }}</output></label>
+      <label>预计花费 ($) <output>{{ fmt(costUsd, 6) }}</output></label>
     </div>
   </section>
 </template>
