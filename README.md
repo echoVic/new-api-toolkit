@@ -96,6 +96,10 @@ ID、Task ID、用户 ID、用户名、渠道 ID、平台、动作、状态、�
 
 参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+## 独立站（倍率计算器）
+
+在线倍率计算器位于 `web/`（Nuxt 3 + SSG，部署 Cloudflare Pages），详见 `web/README.md`。
+
 ## 许可证
 
 [CC BY-NC-SA 4.0](LICENSE)
