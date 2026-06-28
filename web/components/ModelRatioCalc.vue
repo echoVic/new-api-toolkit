@@ -4,6 +4,7 @@ import {
   modelRatioToInputPrice,
   inputPriceToModelRatio,
   completionRatioFromPrices,
+  outputPriceFromCompletionRatio,
   estimateCostUsd,
 } from '../composables/useModelRatio'
 import { MODEL_PRESETS, PRICE_UPDATED_AT } from '../data/models'
@@ -16,7 +17,7 @@ const inputPrice = computed({
   get: () => modelRatioToInputPrice(modelRatio.value),
   set: (v: number) => { modelRatio.value = inputPriceToModelRatio(v) },
 })
-const outputPrice = computed(() => inputPrice.value * completionRatio.value)
+const outputPrice = computed(() => outputPriceFromCompletionRatio(inputPrice.value, completionRatio.value))
 
 const inputTokens = ref(3000)
 const outputTokens = ref(500)
