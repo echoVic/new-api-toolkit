@@ -5,6 +5,8 @@
       <div class="links">
         <NuxtLink to="/model-ratio" class="nav-item" active-class="nav-active">模型倍率</NuxtLink>
         <NuxtLink to="/recharge-ratio" class="nav-item" active-class="nav-active">充值倍率</NuxtLink>
+        <NuxtLink to="/token-calculator" class="nav-item" active-class="nav-active">Token 计算</NuxtLink>
+        <NuxtLink to="/pricing" class="nav-item" active-class="nav-active">价格对比</NuxtLink>
         <NuxtLink to="/benchmark" class="nav-item" active-class="nav-active">API 压测</NuxtLink>
       </div>
     </nav>

@@ -16,6 +16,16 @@ const tools = [
     desc: '汇率 × 站点倍率 × 折扣，折算中转站真实充值成本，横向对比各站价格。',
   },
   {
+    to: '/token-calculator',
+    title: 'Token 计算器',
+    desc: '粘贴文本算 token 数与单次调用费用，OpenAI 精确、其余校准估算。',
+  },
+  {
+    to: '/pricing',
+    title: '价格对比',
+    desc: '主流模型输入/输出/缓存价与上下文横向对比，$/1M ⇄ 倍率切换。',
+  },
+  {
     to: '/benchmark',
     title: 'API 压测',
     desc: '对中转站 API 发起并发请求，测量延迟百分位、TTFT/TPS、RPM/TPM 等性能指标。',
