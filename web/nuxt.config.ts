@@ -19,7 +19,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ['/', '/model-ratio', '/recharge-ratio'],
+      routes: ['/', '/model-ratio', '/recharge-ratio', '/benchmark'],
     },
   },
 })
